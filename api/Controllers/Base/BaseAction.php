@@ -18,14 +18,12 @@ abstract class BaseAction
         $folderPath = dirname($_SERVER['SCRIPT_NAME']);
         $urlPath = $_SERVER['REQUEST_URI'];
         $url = substr($urlPath, strlen($folderPath));
+        $url = explode('?', $url)[0];
         $urlArray = explode('/', $url);
         if ($urlArray[0] !== '') {
             $this->model = mb_strtolower(array_shift($urlArray));
             if (count($urlArray) !== 0) {
                 $this->function = mb_strtolower(array_shift($urlArray));
-                if (count($urlArray) !== 0) {
-                    $this->args = array_values($urlArray);
-                }
             } else {
                 $this->function = '';
             }

@@ -6,8 +6,10 @@ use Api\Models\Base\Orm;
 
 class ElementsModel extends Orm
 {
-    public function __construct()
+    public function __construct(int $role = 0)
     {
-        parent::__construct('id', 'elements');
+        $params = array('id', 'name', 'page', 'limit');
+        $attributes = ['id', 'name'];
+        parent::__construct('elements', $params, $attributes, $role);
     }
 }

@@ -6,8 +6,10 @@ use Api\Models\Base\Orm;
 
 class MunicipalitiesModel extends Orm
 {
-    public function __construct()
+    public function __construct(int $role = 0)
     {
-        parent::__construct('id', 'municipalities');
+        $params = array('id', 'name', 'province', 'page', 'limit');
+        $attributes = ['name', 'province'];
+        parent::__construct('municipalities', $params, $attributes, $role);
     }
 }

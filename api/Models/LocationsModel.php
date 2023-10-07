@@ -6,8 +6,10 @@ use Api\Models\Base\Orm;
 
 class LocationsModel extends Orm
 {
-    public function __construct()
+    public function __construct(int $role = 0)
     {
-        parent::__construct('id', 'locations');
+        $params = array('id', 'name', 'installation', 'page', 'limit');
+        $attributes = ['name', 'columns', 'installation'];
+        parent::__construct('locations', $params, $attributes, $role);
     }
 }

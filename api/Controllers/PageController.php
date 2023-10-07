@@ -17,24 +17,19 @@ class PageController extends BaseAction
 
     public function init(): void
     {
+        header('Access-Control-Allow-Origin: *');
+        header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
+        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
+        header("Allow: GET, POST, OPTIONS, PUT, DELETE");
+        $this->method = $_SERVER['REQUEST_METHOD'];
         switch ($this->method) {
             case 'GET':
                 if ($this->model !== '') {
                     $nameClass = "Api\Models\\" . ucfirst(mb_strtolower($this->model)) . 'Model';
                     if (class_exists($nameClass)) {
-                        $objQuery = new $nameClass();
+                        $objQuery = new $nameClass($this->role);
                         header('Content-type: application/json');
-                        if ($this->function === 'id') {
-                            if (count($this->args) >= 1) {
-                                echo json_encode($objQuery->getById($this->args[0]));
-                            } else {
-                                Services::undefinedMethod();
-                            }
-                        } else if ($this->function === '') {
-                            echo json_encode($objQuery->getAll());
-                        } else {
-                            Services::undefinedMethod();
-                        }
+                        echo json_encode($objQuery->getByParams());
                     } else {
                         Services::undefinedController();
                     }
@@ -43,8 +38,18 @@ class PageController extends BaseAction
                 }
                 break;
             case 'POST':
-                // TODO: Estoy aquí
-
+                if ($this->model !== '') {
+                    $nameClass = "Api\Models\\" . ucfirst(mb_strtolower($this->model)) . 'Model';
+                    if (class_exists($nameClass)) {
+                        $objQuery = new $nameClass($this->role);
+                        header('Content-type: application/json');
+                        $objQuery->insert();
+                    } else {
+                        Services::undefinedController();
+                    }
+                } else {
+                    Services::undefinedController();
+                }
                 break;
             case 'PUT':
                 echo 'PUT';

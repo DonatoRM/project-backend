@@ -2,8 +2,8 @@
 
 namespace Api\Helpers;
 
+use Api\Models\UsersModel;
 use JetBrains\PhpStorm\NoReturn;
-use Models\UsersModel;
 
 /**
  * Clase de Autenticación de usuarios
@@ -56,5 +56,23 @@ class Services
     {
         header("HTTP/1.0 404 Not Found");
         die('Sorry. Page not found');
+    }
+
+    #[NoReturn] public static function actionMethod(): void
+    {
+        header("HTTP/1.0 401 Unauthorized");
+        die('Sorry. This request is not available');
+    }
+
+    #[NoReturn] public static function servicesMethod(): void
+    {
+        header("HTTP/1.0 404 Unauthorized");
+        die('Sorry. Service is not exists');
+    }
+
+    #[NoReturn] public static function operationOK(): void
+    {
+        header("HTTP/1.0 201 Created");
+        echo('Congratulations. The operation was successful');
     }
 }
