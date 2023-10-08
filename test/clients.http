@@ -13,6 +13,21 @@ Accept: application/json
 Authorization: Basic operator operator
 
 ###
+GET http://localhost:80/municipalities?page=5&limit=5
+Accept: application/json
+Authorization: Basic operator operator
+
+###
+GET http://localhost:80/municipalities?page=5
+Accept: application/json
+Authorization: Basic operator operator
+
+###
+GET http://localhost:80/municipalities?limit=5
+Accept: application/json
+Authorization: Basic operator operator
+
+###
 POST http://localhost:80/clients
 Content-Type: application/json
 Authorization: Basic operator operator
@@ -59,6 +74,7 @@ Authorization: Basic operator operator
 }
 
 ###
+
 POST http://localhost:80/installations
 Content-Type: application/json
 Authorization: Basic operator operator
@@ -142,6 +158,37 @@ Authorization: Basic boss boss
 
 {
   "rol": "prueba"
+}
+
+###
+PUT http://localhost:80/clients
+Content-Type: application/json
+Authorization: Basic boss boss
+
+{
+  "id": 1,
+  "email": "nombre.apellidos@mpsa.com",
+  "phone": "986112233"
+}
+
+###
+PUT http://localhost:80/elements
+Content-Type: application/json
+Authorization: Basic boss boss
+
+{
+  "id": "nc",
+  "name": "No contemplado"
+}
+
+###
+PUT http://localhost:80/users
+Content-Type: application/json
+Authorization: Basic boss boss
+
+{
+  "username": "donato",
+  "rol": 2
 }
 
 ###

@@ -19,8 +19,8 @@ class PageController extends BaseAction
     {
         header('Access-Control-Allow-Origin: *');
         header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
-        header("Access-Control-Allow-Methods: GET, POST, OPTIONS, PUT, DELETE");
-        header("Allow: GET, POST, OPTIONS, PUT, DELETE");
+        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
+        header("Allow: GET, POST, PUT, DELETE");
         $this->method = $_SERVER['REQUEST_METHOD'];
         switch ($this->method) {
             case 'GET':
@@ -28,8 +28,8 @@ class PageController extends BaseAction
                     $nameClass = "Api\Models\\" . ucfirst(mb_strtolower($this->model)) . 'Model';
                     if (class_exists($nameClass)) {
                         $objQuery = new $nameClass($this->role);
-                        header('Content-type: application/json');
-                        echo json_encode($objQuery->getByParams());
+                        header('content-type: application/json; charset=utf-8');
+                        echo json_encode($objQuery->select());
                     } else {
                         Services::undefinedController();
                     }
@@ -52,7 +52,18 @@ class PageController extends BaseAction
                 }
                 break;
             case 'PUT':
-                echo 'PUT';
+                if ($this->model !== '') {
+                    $nameClass = "Api\Models\\" . ucfirst(mb_strtolower($this->model)) . 'Model';
+                    if (class_exists($nameClass)) {
+                        $objQuery = new $nameClass($this->role);
+                        header('Content-type: application/json');
+                        $objQuery->update();
+                    } else {
+                        Services::undefinedController();
+                    }
+                } else {
+                    Services::undefinedController();
+                }
                 break;
             case 'DELETE':
                 echo 'DELETE';

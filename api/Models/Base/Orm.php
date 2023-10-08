@@ -24,53 +24,55 @@ class Orm extends Connection
     }
 
     /**
-     * Método que compara la constante superglobal $_GET con el array $this->params
+     * Método que compara la constante superglobal $_GET con el array params
      * y si existe algún parámetro que no esté contemplado, corta la ejecución del
      * programa
      * @return void
      */
-    private function checkParams(): void
+    private function checkParamsOfSelect(): void
     {
         $count = 0;
         foreach ($_GET as $key => $value) {
             if ($count >= 3) {
-                $index = array_search($key, $this->params);
+                $index = in_array($key, $this->params);
                 if ($index === false) Services::servicesMethod();
             }
             $count++;
         }
+        if ((isset($_GET['page']) && !isset($_GET['limit'])) || (!isset($_GET['page']) && isset($_GET['limit']))) {
+            Services::servicesMethod();
+        }
     }
 
     /**
-     * Método que devuelve el registro que posee el ID de una tabla
-     *
+     * Método que devuelve los registros de una tabla según los parámetros pasados por GET
      * @return array|bool
      */
-    public function getByParams(): array|bool
+    public function select(): array|bool
     {
+        // Solo el usuario boss podrá leer los datos de la tabla usuarios
         if ($this->table === 'users' && $this->role !== 3) {
             Services::actionMethod();
         } else {
             try {
-                $this->checkParams();
+                $this->checkParamsOfSelect(); //
                 $page = null;
                 $limit = 0;
+                // Se actualiza la paginación si está indicada en la URL
                 if (isset($_GET['page']) && isset($_GET['limit'])) {
                     $page = intval($_GET['page']);
                     unset($_GET['page']);
                     $limit = intval($_GET['limit']);
                     unset($_GET['limit']);
                 }
-                if ((isset($_GET['page']) && !isset($_GET['limit'])) || (!isset($_GET['page']) && isset($_GET['limit']))) {
-                    Services::servicesMethod();
-                }
                 $query = "SELECT * FROM $this->table ";
-                $queryCount = "SELECT COUNT(*) FROM $this->table ";
+                $queryCount = "SELECT COUNT(*) FROM $this->table "; // Para saber el número de registros devueltos
+                // Si existe algún parámetro que no sea page o limit...
                 if (count($_GET) > 3) {
                     $query .= "WHERE ";
                     $queryCount .= "WHERE ";
                 }
-                $noFirst = false;
+                $noFirst = false; // Para identificar que no es el primer parámetro
                 for ($i = 0; $i < count($this->params); $i++) {
                     if ($noFirst && isset($_GET["{$this->params[$i]}"])) $query .= ' AND ';
                     if (isset($_GET["{$this->params[$i]}"])) {
@@ -79,6 +81,7 @@ class Orm extends Connection
                         $noFirst = true;
                     }
                 }
+                // Se especifica como quedaría la paginación
                 if ($page !== null && $limit !== null) {
                     $offset = ($page - 1) * $limit;
                     $query .= " LIMIT $offset,$limit";
@@ -91,6 +94,7 @@ class Orm extends Connection
                 }
                 $stmt->execute();
                 $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                //Se realiza la consulta de datos globales
                 $stmt = $this->connection->prepare($queryCount);
                 foreach ($this->params as $param) {
                     if (isset($_GET["$param"])) {
@@ -120,52 +124,14 @@ class Orm extends Connection
         }
     }
 
+
     /**
-     * Método que elimina el registro correspondiente al ID de una tabla
-     *
-     * @param string $id Identificador del registro
-     * @return void
+     * Método que comprueba que todos los atributos pasamos por parámetro se corresponderían con todos los
+     * campos que posee la tabla menos si ID
+     * @param $dataObject
+     * @return object|null
      */
-    public function deleteById(string $id): void
-    {
-        if ($this->table === 'users' && $this->role !== 3) {
-            Services::actionMethod();
-        } else {
-            try {
-                $stmt = $this->connection->prepare("DELETE FROM $this->table WHERE id=:id");
-                $stmt->bindValue(":id", $id, PDO::PARAM_INT);
-                $stmt->execute();
-            } catch (PDOException $ex) {
-                die("Failed to clear database log. Message: " . $ex->getMessage());
-            }
-        }
-    }
-
-    public function updateById(string $id, array $data): void
-    {
-        if ($this->table === 'users' && $this->role !== 3) {
-            Services::actionMethod();
-        } else {
-            try {
-                $sql = "UPDATE $this->table SET ";
-                foreach ($data as $key => $value) {
-                    $sql .= "$key=:$key,";
-                }
-                $sql = trim($sql, ',');
-                $sql .= " WHERE id=:id";
-                $stmt = $this->connection->prepare($sql);
-                foreach ($data as $key => $value) {
-                    $stmt->bindValue(":$key", "$value");
-                }
-                $stmt->bindValue(':id', $id, PDO::PARAM_INT);
-                $stmt->execute();
-            } catch (PDOException $ex) {
-                die("Failed to update database record. Message: " . $ex->getMessage());
-            }
-        }
-    }
-
-    private function okAttributes($dataObject): object|null
+    private function areTheAttributesValidForInsertion($dataObject): object|null
     {
         if (count(get_object_vars($dataObject)) !== count($this->attributes)) {
             Services::actionMethod();
@@ -180,38 +146,137 @@ class Orm extends Connection
         return $dataObject;
     }
 
+    /**
+     * Método que devuelve el Hash de una Cadena de caracteres
+     * @param string $pass
+     * @return string
+     */
+    private function getHashFormPassword(string $pass): string
+    {
+        return hash('sha256', $pass);
+    }
+
+    /**
+     * Método que inserta dentro de cada una de las tablas, un objeto JSON pasado por POST
+     * @return void
+     */
     public function insert(): void
     {
-        if (($this->table === 'users' || $this->table === 'roles') && $this->role !== 3) {
+        // El cliente no puede modificar los datos de la BD. Solo puede verlos
+        if ($this->role === 2) {
+            Services::actionMethod();
+        } else {
+            // Solo el usuario boss puede interactuar con la tabla users
+            if (($this->table === 'users' || $this->table === 'roles') && $this->role !== 3) {
+                Services::actionMethod();
+            } else {
+                try {
+                    $JSONData = file_get_contents("php://input");
+                    $dataObject = json_decode($JSONData);
+                    $dataObject = $this->areTheAttributesValidForInsertion($dataObject);
+                    if ($this->role === 3 && $this->table === 'users') {
+                        $dataObject->password = $this->getHashFormPassword($dataObject->password);
+                    }
+                    $sql = "INSERT INTO $this->table(";
+                    foreach ($dataObject as $key => $value) {
+                        $sql .= "$key,";
+                    }
+                    $sql = trim($sql, ',');
+                    $sql .= ") VALUES(";
+                    foreach ($dataObject as $key => $value) {
+                        $sql .= ":$key,";
+                    }
+                    $sql = trim($sql, ',');
+                    $sql .= ")";
+                    $stmt = $this->connection->prepare($sql);
+                    foreach ($dataObject as $key => $value) {
+                        $stmt->bindValue(":$key", $value);
+                    }
+                    $stmt->execute();
+                    Services::operationOK();
+
+                } catch (PDOException $ex) {
+                    die("Failed to insert database record. Message: " . $ex->getMessage());
+                }
+            }
+        }
+    }
+
+    private function areTheAttributesValidForUpdate($dataObject): object|null
+    {
+        $okAllAttributes = false;
+        foreach ($this->attributes as $attribute) {
+            if (property_exists($dataObject, $attribute)) $okAllAttributes = true;
+        }
+        if ($this->table === 'users' && $this->role === 3) {
+            if (!property_exists($dataObject, 'username')) $okAllAttributes = false;
+            $this->query = "SELECT * FROM users WHERE username=:username";
+        } else {
+            if (!property_exists($dataObject, 'id')) $okAllAttributes = false;
+            $this->query = "SELECT * FROM $this->table WHERE id=:id";
+        }
+        if (!$this->checkIfTheIdExists($dataObject)) $okAllAttributes = false;
+        if (!$okAllAttributes) {
+            Services::servicesMethod();
+        }
+        return $dataObject;
+    }
+
+    public function update(): void
+    {
+        // El cliente no puede modificar los datos de la BD. Solo puede verlos
+        if ($this->role === 2) {
+            Services::actionMethod();
+        } else {
+            if ($this->table === 'users' && $this->role !== 3) {
+                Services::actionMethod();
+            } else {
+                try {
+                    $JSONData = file_get_contents("php://input");
+                    $dataObject = json_decode($JSONData);
+                    $dataObject = $this->areTheAttributesValidForUpdate($dataObject);
+                    if ($this->role === 3 && $this->table === 'users') {
+                        if (isset($dataObject->password)) $dataObject->password = $this->getHashFormPassword($dataObject->password);
+                    }
+                    $sql = "UPDATE $this->table SET ";
+                    foreach ($dataObject as $key => $value) {
+                        if ($key !== 'id' && $key !== 'username') $sql .= "$key=:$key,";
+                    }
+                    $sql = trim($sql, ',');
+                    if ($this->table === 'users' && $this->role === 3) {
+                        $sql .= " WHERE username=:username";
+                    } else {
+                        $sql .= " WHERE id=:id";
+                    }
+                    $stmt = $this->connection->prepare($sql);
+                    foreach ($dataObject as $key => $value) {
+                        $stmt->bindValue(":$key", "$value", PDO::PARAM_STR);
+                    }
+                    $stmt->execute();
+                    Services::operationOK();
+                } catch (PDOException $ex) {
+                    die("Failed to update database record. Message: " . $ex->getMessage());
+                }
+            }
+        }
+    }
+
+    /**
+     * Método que elimina el registro correspondiente al ID de una tabla
+     * @param string $id Identificador del registro
+     * @return void
+     */
+    public function deleteById(string $id): void
+    {
+        if ($this->table === 'users' && $this->role !== 3) {
             Services::actionMethod();
         } else {
             try {
-                $JSONData = file_get_contents("php://input");
-                $dataObject = json_decode($JSONData);
-                $dataObject = $this->okAttributes($dataObject);
-                if ($this->role === 3 && $this->table === 'users') {
-                    $dataObject->password = hash('sha256', $dataObject->password);
-                }
-                $sql = "INSERT INTO $this->table(";
-                foreach ($dataObject as $key => $value) {
-                    $sql .= "$key,";
-                }
-                $sql = trim($sql, ',');
-                $sql .= ") VALUES(";
-                foreach ($dataObject as $key => $value) {
-                    $sql .= ":$key,";
-                }
-                $sql = trim($sql, ',');
-                $sql .= ")";
-                $stmt = $this->connection->prepare($sql);
-                foreach ($dataObject as $key => $value) {
-                    $stmt->bindValue(":$key", $value);
-                }
+                $stmt = $this->connection->prepare("DELETE FROM $this->table WHERE id=:id");
+                $stmt->bindValue(":id", $id, PDO::PARAM_INT);
                 $stmt->execute();
-                Services::operationOK();
-
             } catch (PDOException $ex) {
-                die("Failed to insert database record. Message: " . $ex->getMessage());
+                die("Failed to clear database log. Message: " . $ex->getMessage());
             }
         }
     }
@@ -231,6 +296,28 @@ class Orm extends Connection
             return $role->rol;
         } catch (PDOException $ex) {
             die('The database query failed. Message: ' . $ex->getMessage());
+        }
+    }
+
+    private function checkIfTheIdExists(object $dataObject): bool
+    {
+        $value = '';
+        if ($this->table === 'users') $value = $dataObject->username;
+        else $value = $dataObject->id;
+        try {
+            $stmt = $this->connection->prepare($this->query);
+            if ($this->table === 'users') {
+                $stmt->bindValue(":username", $value, PDO::PARAM_INT | PDO::PARAM_STR);
+            } else {
+                $stmt->bindValue(":id", $value, PDO::PARAM_INT | PDO::PARAM_STR);
+            }
+            $stmt->execute();
+            $res = true;
+            if (count($stmt->fetchAll(PDO::FETCH_ASSOC)) === 0) $res = false;
+            $stmt = null;
+            return $res;
+        } catch (PDOException $ex) {
+            die("Failed to search database. Message: " . $ex->getMessage());
         }
     }
 }
