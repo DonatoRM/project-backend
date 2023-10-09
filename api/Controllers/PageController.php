@@ -66,7 +66,18 @@ class PageController extends BaseAction
                 }
                 break;
             case 'DELETE':
-                echo 'DELETE';
+                if ($this->model !== '') {
+                    $nameClass = "Api\Models\\" . ucfirst(mb_strtolower($this->model)) . 'Model';
+                    if (class_exists($nameClass)) {
+                        $objQuery = new $nameClass($this->role);
+                        header('Content-type: application/json');
+                        $objQuery->delete();
+                    } else {
+                        Services::undefinedController();
+                    }
+                } else {
+                    Services::undefinedController();
+                }
                 break;
             default:
                 Services::undefinedMethod();

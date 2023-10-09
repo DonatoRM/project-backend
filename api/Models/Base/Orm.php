@@ -52,76 +52,79 @@ class Orm extends Connection
     {
         // Solo el usuario boss podrá leer los datos de la tabla usuarios
         if ($this->table === 'users' && $this->role !== 3) {
-            Services::actionMethod();
-        } else {
-            try {
-                $this->checkParamsOfSelect(); //
-                $page = null;
-                $limit = 0;
-                // Se actualiza la paginación si está indicada en la URL
-                if (isset($_GET['page']) && isset($_GET['limit'])) {
-                    $page = intval($_GET['page']);
-                    unset($_GET['page']);
-                    $limit = intval($_GET['limit']);
-                    unset($_GET['limit']);
-                }
-                $query = "SELECT * FROM $this->table ";
-                $queryCount = "SELECT COUNT(*) FROM $this->table "; // Para saber el número de registros devueltos
-                // Si existe algún parámetro que no sea page o limit...
-                if (count($_GET) > 3) {
-                    $query .= "WHERE ";
-                    $queryCount .= "WHERE ";
-                }
-                $noFirst = false; // Para identificar que no es el primer parámetro
-                for ($i = 0; $i < count($this->params); $i++) {
-                    if ($noFirst && isset($_GET["{$this->params[$i]}"])) $query .= ' AND ';
-                    if (isset($_GET["{$this->params[$i]}"])) {
-                        $query .= $this->params[$i] . "=:" . $this->params[$i];
-                        $queryCount .= $this->params[$i] . "=:" . $this->params[$i];
-                        $noFirst = true;
-                    }
-                }
-                // Se especifica como quedaría la paginación
-                if ($page !== null && $limit !== null) {
-                    $offset = ($page - 1) * $limit;
-                    $query .= " LIMIT $offset,$limit";
-                }
-                $stmt = $this->connection->prepare($query);
-                foreach ($this->params as $param) {
-                    if (isset($_GET["$param"])) {
-                        $stmt->bindValue(":$param", $_GET["$param"], PDO::PARAM_INT | PDO::PARAM_STR);
-                    }
-                }
-                $stmt->execute();
-                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                //Se realiza la consulta de datos globales
-                $stmt = $this->connection->prepare($queryCount);
-                foreach ($this->params as $param) {
-                    if (isset($_GET["$param"])) {
-                        $stmt->bindValue(":$param", $_GET["$param"], PDO::PARAM_INT | PDO::PARAM_STR);
-                    }
-                }
-                $stmt->execute();
-                $res = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
-                $rows = $res['COUNT(*)'];
-                $stmt = null;
-                if ($limit !== 0) $pages = ceil($rows / $limit);
-                if ($page === null && $limit === 0) {
-                    $page = 1;
-                    $limit = $rows;
-                    $pages = 1;
-                }
-                return [
-                    'data' => $result,
-                    'page' => $page,
-                    'limit' => $limit,
-                    'pages' => $pages,
-                    'rows' => $rows
-                ];
-            } catch (PDOException $ex) {
-                die("Failed to search database. Message: " . $ex->getMessage());
-            }
+            Services::unauthorizedAccess();
         }
+        if ($this->table === 'roles' && $this->role !== 3) {
+            Services::unauthorizedAccess();
+        }
+        try {
+            $this->checkParamsOfSelect(); //
+            $page = null;
+            $limit = 0;
+            // Se actualiza la paginación si está indicada en la URL
+            if (isset($_GET['page']) && isset($_GET['limit'])) {
+                $page = intval($_GET['page']);
+                unset($_GET['page']);
+                $limit = intval($_GET['limit']);
+                unset($_GET['limit']);
+            }
+            $query = "SELECT * FROM $this->table ";
+            $queryCount = "SELECT COUNT(*) FROM $this->table "; // Para saber el número de registros devueltos
+            // Si existe algún parámetro que no sea page o limit...
+            if (count($_GET) > 3) {
+                $query .= "WHERE ";
+                $queryCount .= "WHERE ";
+            }
+            $noFirst = false; // Para identificar que no es el primer parámetro
+            for ($i = 0; $i < count($this->params); $i++) {
+                if ($noFirst && isset($_GET["{$this->params[$i]}"])) $query .= ' AND ';
+                if (isset($_GET["{$this->params[$i]}"])) {
+                    $query .= $this->params[$i] . "=:" . $this->params[$i];
+                    $queryCount .= $this->params[$i] . "=:" . $this->params[$i];
+                    $noFirst = true;
+                }
+            }
+            // Se especifica como quedaría la paginación
+            if ($page !== null && $limit !== null) {
+                $offset = ($page - 1) * $limit;
+                $query .= " LIMIT $offset,$limit";
+            }
+            $stmt = $this->connection->prepare($query);
+            foreach ($this->params as $param) {
+                if (isset($_GET["$param"])) {
+                    $stmt->bindValue(":$param", $_GET["$param"], PDO::PARAM_INT | PDO::PARAM_STR);
+                }
+            }
+            $stmt->execute();
+            $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            //Se realiza la consulta de datos globales
+            $stmt = $this->connection->prepare($queryCount);
+            foreach ($this->params as $param) {
+                if (isset($_GET["$param"])) {
+                    $stmt->bindValue(":$param", $_GET["$param"], PDO::PARAM_INT | PDO::PARAM_STR);
+                }
+            }
+            $stmt->execute();
+            $res = $stmt->fetchAll(PDO::FETCH_ASSOC)[0];
+            $rows = $res['COUNT(*)'];
+            $stmt = null;
+            if ($limit !== 0) $pages = ceil($rows / $limit);
+            if ($page === null && $limit === 0) {
+                $page = 1;
+                $limit = $rows;
+                $pages = 1;
+            }
+            return [
+                'data' => $result,
+                'page' => $page,
+                'limit' => $limit,
+                'pages' => $pages,
+                'rows' => $rows
+            ];
+        } catch (PDOException $ex) {
+            die("Failed to search database. Message: " . $ex->getMessage());
+        }
+
     }
 
 
@@ -171,10 +174,13 @@ class Orm extends Connection
                 Services::actionMethod();
             } else {
                 try {
+                    if ($this->table === 'countries' || $this->table === 'provinces' || $this->table ===
+                        'municipalities' || $this->table === 'elements') Services::actionMethod();
                     $JSONData = file_get_contents("php://input");
                     $dataObject = json_decode($JSONData);
                     $dataObject = $this->areTheAttributesValidForInsertion($dataObject);
                     if ($this->role === 3 && $this->table === 'users') {
+                        if ($this->checkIfIdExists($dataObject)) Services::undefinedError();
                         $dataObject->password = $this->getHashFormPassword($dataObject->password);
                     }
                     $sql = "INSERT INTO $this->table(";
@@ -193,7 +199,7 @@ class Orm extends Connection
                         $stmt->bindValue(":$key", $value);
                     }
                     $stmt->execute();
-                    Services::operationOK();
+                    Services::insertionOK();
 
                 } catch (PDOException $ex) {
                     die("Failed to insert database record. Message: " . $ex->getMessage());
@@ -202,12 +208,18 @@ class Orm extends Connection
         }
     }
 
+    /**
+     * Método que verifica que los atributos son válidos para realizar una actualización de datos
+     * @param $dataObject
+     * @return object|null
+     */
     private function areTheAttributesValidForUpdate($dataObject): object|null
     {
         $okAllAttributes = false;
         foreach ($this->attributes as $attribute) {
             if (property_exists($dataObject, $attribute)) $okAllAttributes = true;
         }
+        if (!$this->checkIfIdExists($dataObject)) $okAllAttributes = false;
         if ($this->table === 'users' && $this->role === 3) {
             if (!property_exists($dataObject, 'username')) $okAllAttributes = false;
             $this->query = "SELECT * FROM users WHERE username=:username";
@@ -215,23 +227,28 @@ class Orm extends Connection
             if (!property_exists($dataObject, 'id')) $okAllAttributes = false;
             $this->query = "SELECT * FROM $this->table WHERE id=:id";
         }
-        if (!$this->checkIfTheIdExists($dataObject)) $okAllAttributes = false;
         if (!$okAllAttributes) {
             Services::servicesMethod();
         }
         return $dataObject;
     }
 
+    /**
+     * Método que actualiza un registro pasado en formato JSON por el método PUT
+     * @return void
+     */
     public function update(): void
     {
         // El cliente no puede modificar los datos de la BD. Solo puede verlos
         if ($this->role === 2) {
             Services::actionMethod();
         } else {
-            if ($this->table === 'users' && $this->role !== 3) {
+            if (($this->table === 'users' || $this->table === 'roles') && $this->role !== 3) {
                 Services::actionMethod();
             } else {
                 try {
+                    if ($this->table === 'countries' || $this->table === 'provinces' || $this->table ===
+                        'municipalities' || $this->table === 'elements') Services::actionMethod();
                     $JSONData = file_get_contents("php://input");
                     $dataObject = json_decode($JSONData);
                     $dataObject = $this->areTheAttributesValidForUpdate($dataObject);
@@ -253,7 +270,7 @@ class Orm extends Connection
                         $stmt->bindValue(":$key", "$value", PDO::PARAM_STR);
                     }
                     $stmt->execute();
-                    Services::operationOK();
+                    Services::insertionOK();
                 } catch (PDOException $ex) {
                     die("Failed to update database record. Message: " . $ex->getMessage());
                 }
@@ -266,17 +283,45 @@ class Orm extends Connection
      * @param string $id Identificador del registro
      * @return void
      */
-    public function deleteById(string $id): void
+    public function delete(): void
     {
-        if ($this->table === 'users' && $this->role !== 3) {
+        // El cliente no puede borrar los datos de la BD. Solo puede verlos
+        if ($this->role === 2) {
             Services::actionMethod();
         } else {
-            try {
-                $stmt = $this->connection->prepare("DELETE FROM $this->table WHERE id=:id");
-                $stmt->bindValue(":id", $id, PDO::PARAM_INT);
-                $stmt->execute();
-            } catch (PDOException $ex) {
-                die("Failed to clear database log. Message: " . $ex->getMessage());
+            if (($this->table === 'users' || $this->table === 'roles') && $this->role !== 3) {
+                Services::actionMethod();
+            } else {
+                try {
+                    if ($this->table === 'countries' || $this->table === 'provinces' || $this->table ===
+                        'municipalities' || $this->table === 'elements') Services::actionMethod();
+                    $JSONData = file_get_contents("php://input");
+                    $dataObject = json_decode($JSONData);
+                    if (count(get_object_vars($dataObject)) !== 1) {
+                        Services::servicesMethod();
+                    }
+                    if (!$this->checkIfIdExists($dataObject)) Services::servicesMethod();
+                    $param = '';
+                    $value = '';
+                    if ($this->table === 'users' && isset($dataObject->username)) {
+                        $query = "DELETE FROM $this->table WHERE username=:username";
+                        $param = ':username';
+                        $value = $dataObject->username;
+                    } else if ($this->table !== 'users') {
+                        $query = "DELETE FROM $this->table WHERE id=:id";
+                        $param = ':id';
+                        $value = $dataObject->id;
+                    } else {
+                        Services::servicesMethod();
+                    }
+                    $stmt = $this->connection->prepare($query);
+
+                    $stmt->bindValue("$param", $value, PDO::PARAM_STR);
+                    $stmt->execute();
+                    Services::insertionOK();
+                } catch (PDOException $ex) {
+                    die("Failed to clear database log. Message: " . $ex->getMessage());
+                }
             }
         }
     }
@@ -299,15 +344,23 @@ class Orm extends Connection
         }
     }
 
-    private function checkIfTheIdExists(object $dataObject): bool
+    private function checkIfIdExists(object $dataObject): bool
     {
+        $query = '';
+        if ($this->query === '') $query = "SELECT * FROM $this->table";
+        else $query = $this->query;
         $value = '';
-        if ($this->table === 'users') $value = $dataObject->username;
-        else $value = $dataObject->id;
+        if ($this->table === 'users') {
+            $query .= " WHERE username=:username";
+            $value = $dataObject->username;
+        } else {
+            $query .= " WHERE " . $this->table . ".id=:id";
+            $value = $dataObject->id;
+        }
         try {
-            $stmt = $this->connection->prepare($this->query);
+            $stmt = $this->connection->prepare($query);
             if ($this->table === 'users') {
-                $stmt->bindValue(":username", $value, PDO::PARAM_INT | PDO::PARAM_STR);
+                $stmt->bindValue(":username", $value, PDO::PARAM_STR);
             } else {
                 $stmt->bindValue(":id", $value, PDO::PARAM_INT | PDO::PARAM_STR);
             }
@@ -317,7 +370,7 @@ class Orm extends Connection
             $stmt = null;
             return $res;
         } catch (PDOException $ex) {
-            die("Failed to search database. Message: " . $ex->getMessage());
+            Services::undefinedError();
         }
     }
 }

@@ -60,19 +60,31 @@ class Services
 
     #[NoReturn] public static function actionMethod(): void
     {
-        header("HTTP/1.0 401 Unauthorized");
+        header("HTTP/1.0 400 Bad request");
         die('Sorry. This request is not available');
     }
 
     #[NoReturn] public static function servicesMethod(): void
     {
-        header("HTTP/1.0 404 Unauthorized");
+        header("HTTP/1.0 404 Not Found");
         die('Sorry. Service is not exists');
     }
 
-    #[NoReturn] public static function operationOK(): void
+    #[NoReturn] public static function insertionOK(): void
     {
         header("HTTP/1.0 201 Created");
         echo('Congratulations. The operation was successful');
+    }
+
+    #[NoReturn] public static function undefinedError(): void
+    {
+        header("HTTP/1.0 400 Bad request");
+        die('Sorry. Wrong query');
+    }
+
+    #[NoReturn] public static function unauthorizedAccess(): void
+    {
+        header("HTTP/1.0 401 Unauthorized");
+        die('Sorry. Incorrect Credentials');
     }
 }
