@@ -2,6 +2,7 @@
 
 namespace Models\Base;
 
+use Api\Helpers\Logs;
 use PDO, PDOException;
 
 abstract class Connection
@@ -15,6 +16,7 @@ abstract class Connection
             $this->connection = new PDO($dsn, $_ENV['DB_USER'], $_ENV['DB_PASS']);
             $this->connection->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
         } catch (PDOException $ex) {
+            Logs::logger('Error al conectar con la BD', 'debug');
             die('Error al conectar con la BD. Mensaje: ' . $ex->getMessage());
         }
     }

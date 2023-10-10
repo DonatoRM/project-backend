@@ -24,6 +24,7 @@ class Services
         $objUserModel = new UsersModel();
         $role = $objUserModel->authentication($_SERVER['PHP_AUTH_USER'], $_SERVER['PHP_AUTH_PW']);
         if ($role === 0) {
+            Logs::logger('Usuario no registrado', 'warning');
             header("HTTP/1.0 401 Unauthorized");
             die('Sorry. Incorrect Credentials');
         };
@@ -37,6 +38,7 @@ class Services
      */
     #[NoReturn] public static function undefinedController(): void
     {
+        Logs::logger('Acceso a controlador erróneo', 'warning');
         header("HTTP/1.0 404 Not Found");
         die('Sorry. Page not found');
     }
@@ -48,12 +50,14 @@ class Services
      */
     #[NoReturn] public static function undefinedFunction(): void
     {
+        Logs::logger('Acceso a función errónea', 'warning');
         header("HTTP/1.0 404 Not Found");
         die('Sorry. Page not found');
     }
 
     #[NoReturn] public static function undefinedMethod(): void
     {
+        Logs::logger('Acceso a método erróneo', 'warning');
         header("HTTP/1.0 404 Not Found");
         die('Sorry. Page not found');
     }
@@ -66,6 +70,7 @@ class Services
 
     #[NoReturn] public static function servicesMethod(): void
     {
+        Logs::logger('Acceso a servicio erróneo', 'warning');
         header("HTTP/1.0 404 Not Found");
         die('Sorry. Service is not exists');
     }
@@ -84,6 +89,7 @@ class Services
 
     #[NoReturn] public static function unauthorizedAccess(): void
     {
+        Logs::logger('Usuario no tiene acceso', 'warning');
         header("HTTP/1.0 401 Unauthorized");
         die('Sorry. Incorrect Credentials');
     }

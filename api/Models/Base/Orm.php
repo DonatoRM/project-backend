@@ -2,6 +2,7 @@
 
 namespace Api\Models\Base;
 
+use Api\Helpers\Logs;
 use Api\Helpers\Services;
 use PDO, PDOException;
 use Models\Base\Connection;
@@ -122,6 +123,7 @@ class Orm extends Connection
                 'rows' => $rows
             ];
         } catch (PDOException $ex) {
+            Logs::logger('Error al buscar en la BD', 'debug');
             die("Failed to search database. Message: " . $ex->getMessage());
         }
 
@@ -202,6 +204,7 @@ class Orm extends Connection
                     Services::insertionOK();
 
                 } catch (PDOException $ex) {
+                    Logs::logger('Error al insertar en la BD', 'debug');
                     die("Failed to insert database record. Message: " . $ex->getMessage());
                 }
             }
@@ -272,6 +275,7 @@ class Orm extends Connection
                     $stmt->execute();
                     Services::insertionOK();
                 } catch (PDOException $ex) {
+                    Logs::logger('Error al actualizar en la BD', 'debug');
                     die("Failed to update database record. Message: " . $ex->getMessage());
                 }
             }
@@ -320,6 +324,7 @@ class Orm extends Connection
                     $stmt->execute();
                     Services::insertionOK();
                 } catch (PDOException $ex) {
+                    Logs::logger('Error al borrar en la BD', 'debug');
                     die("Failed to clear database log. Message: " . $ex->getMessage());
                 }
             }
@@ -340,6 +345,7 @@ class Orm extends Connection
             $stmt = null;
             return $role->rol;
         } catch (PDOException $ex) {
+            Logs::logger('Error al consultar en la BD', 'debug');
             die('The database query failed. Message: ' . $ex->getMessage());
         }
     }
@@ -370,6 +376,7 @@ class Orm extends Connection
             $stmt = null;
             return $res;
         } catch (PDOException $ex) {
+            Logs::logger('Error indefinido en la BD', 'debug');
             Services::undefinedError();
         }
     }
