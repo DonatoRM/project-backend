@@ -14,7 +14,13 @@ class Orm extends Connection
     private int $role;
     private array $params;
     private array $attributes;
-
+    /**
+     * Constructor de la clase
+     * @param string $table
+     * @param array $params
+     * @param array $attributes
+     * @param int $role
+     */
     public function __construct(string $table, array $params, array $attributes, int $role = 0)
     {
         parent::__construct();
@@ -23,7 +29,6 @@ class Orm extends Connection
         $this->params = $params;
         $this->attributes = $attributes;
     }
-
     /**
      * Método que compara la constante superglobal $_GET con el array params
      * y si existe algún parámetro que no esté contemplado, corta la ejecución del
@@ -44,14 +49,12 @@ class Orm extends Connection
             Services::servicesMethod();
         }
     }
-
     /**
      * Método que devuelve los registros de una tabla según los parámetros pasados por GET
      * @return array|bool
      */
     public function select(): array|bool
     {
-        // Solo el usuario boss podrá leer los datos de la tabla usuarios
         if ($this->table === 'users' && $this->role !== 3) {
             Services::unauthorizedAccess();
         }
@@ -62,7 +65,6 @@ class Orm extends Connection
             $this->checkParamsOfSelect(); //
             $page = null;
             $limit = 0;
-            // Se actualiza la paginación si está indicada en la URL
             if (isset($_GET['page']) && isset($_GET['limit'])) {
                 $page = intval($_GET['page']);
                 unset($_GET['page']);
@@ -70,13 +72,12 @@ class Orm extends Connection
                 unset($_GET['limit']);
             }
             $query = "SELECT * FROM $this->table ";
-            $queryCount = "SELECT COUNT(*) FROM $this->table "; // Para saber el número de registros devueltos
-            // Si existe algún parámetro que no sea page o limit...
+            $queryCount = "SELECT COUNT(*) FROM $this->table ";
             if (count($_GET) > 3) {
                 $query .= "WHERE ";
                 $queryCount .= "WHERE ";
             }
-            $noFirst = false; // Para identificar que no es el primer parámetro
+            $noFirst = false;
             for ($i = 0; $i < count($this->params); $i++) {
                 if ($noFirst && isset($_GET["{$this->params[$i]}"])) $query .= ' AND ';
                 if (isset($_GET["{$this->params[$i]}"])) {
@@ -85,7 +86,6 @@ class Orm extends Connection
                     $noFirst = true;
                 }
             }
-            // Se especifica como quedaría la paginación
             if ($page !== null && $limit !== null) {
                 $offset = ($page - 1) * $limit;
                 $query .= " LIMIT $offset,$limit";
@@ -126,10 +126,7 @@ class Orm extends Connection
             Logs::logger('Error al buscar en la BD', 'debug');
             die("Failed to search database. Message: " . $ex->getMessage());
         }
-
     }
-
-
     /**
      * Método que comprueba que todos los atributos pasamos por parámetro se corresponderían con todos los
      * campos que posee la tabla menos si ID
@@ -150,7 +147,6 @@ class Orm extends Connection
         }
         return $dataObject;
     }
-
     /**
      * Método que devuelve el Hash de una Cadena de caracteres
      * @param string $pass
@@ -160,18 +156,15 @@ class Orm extends Connection
     {
         return hash('sha256', $pass);
     }
-
     /**
      * Método que inserta dentro de cada una de las tablas, un objeto JSON pasado por POST
      * @return void
      */
     public function insert(): void
     {
-        // El cliente no puede modificar los datos de la BD. Solo puede verlos
         if ($this->role === 2) {
             Services::actionMethod();
         } else {
-            // Solo el usuario boss puede interactuar con la tabla users
             if (($this->table === 'users' || $this->table === 'roles') && $this->role !== 3) {
                 Services::actionMethod();
             } else {
@@ -210,7 +203,6 @@ class Orm extends Connection
             }
         }
     }
-
     /**
      * Método que verifica que los atributos son válidos para realizar una actualización de datos
      * @param $dataObject
@@ -235,14 +227,12 @@ class Orm extends Connection
         }
         return $dataObject;
     }
-
     /**
      * Método que actualiza un registro pasado en formato JSON por el método PUT
      * @return void
      */
     public function update(): void
     {
-        // El cliente no puede modificar los datos de la BD. Solo puede verlos
         if ($this->role === 2) {
             Services::actionMethod();
         } else {
@@ -281,7 +271,6 @@ class Orm extends Connection
             }
         }
     }
-
     /**
      * Método que elimina el registro correspondiente al ID de una tabla
      * @param string $id Identificador del registro
@@ -289,7 +278,6 @@ class Orm extends Connection
      */
     public function delete(): void
     {
-        // El cliente no puede borrar los datos de la BD. Solo puede verlos
         if ($this->role === 2) {
             Services::actionMethod();
         } else {
@@ -330,7 +318,12 @@ class Orm extends Connection
             }
         }
     }
-
+    /**
+     * Método que se usa para realizar la autenticación
+     * @param string $user
+     * @param string $pass
+     * @return int
+     */
     public function authentication(string $user, string $pass): int
     {
         $passHash = strtoupper(hash('sha256', $pass));
@@ -349,7 +342,11 @@ class Orm extends Connection
             die('The database query failed. Message: ' . $ex->getMessage());
         }
     }
-
+    /**
+     * Método que revisa si existe o no un Id
+     * @param object $dataObject
+     * @return bool
+     */
     private function checkIfIdExists(object $dataObject): bool
     {
         $query = '';

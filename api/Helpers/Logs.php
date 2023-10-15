@@ -12,7 +12,12 @@ class Logs
     private static string $logPatch = 'logs/backend.log';
     private static Logger $logger;
     private static int $numberOfFilesStored = 7;
-
+    /**
+     * Método estático que almacena un mensaje en el Log
+     * @param $message
+     * @param $modo
+     * @return void
+     */
     public static function logger($message, $modo = 'info'): void
     {
         self::$logger = new Logger(self::$channel);

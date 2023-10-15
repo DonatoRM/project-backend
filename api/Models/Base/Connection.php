@@ -8,7 +8,9 @@ use PDO, PDOException;
 abstract class Connection
 {
     protected PDO $connection;
-
+    /**
+     * Constructor de la clase
+     */
     public function __construct()
     {
         $dsn = "mysql:host=" . $_ENV['DB_HOST'] . ";dbname=" . $_ENV['DB_DBNAME'] . ";port=" . $_ENV['DB_PORT'] . ";charset=" . $_ENV['DB_CHARSET'];

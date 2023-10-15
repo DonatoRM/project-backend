@@ -2,7 +2,7 @@
   "name": "donatorm/backend",
   "description": "Project Backend",
   "type": "project",
-  "license": "MIT",
+  "license": "proprietary",
   "autoload": {
     "psr-4": {
       "Api\\": "api/",
