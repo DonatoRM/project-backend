@@ -7,15 +7,17 @@ use Api\Helpers\Services;
 
 class PageController extends BaseAction
 {
-    private string $role;
+    private int $role;
+    private array $arrayAuth;
     /**
      * Class constructor
      * @param string $role
      */
-    public function __construct(string $role)
+    public function __construct(array $arrayAuth)
     {
         parent::__construct();
-        $this->role = $role;
+        $this->role = $arrayAuth['role'];
+        $this->arrayAuth=$arrayAuth;
     }
 
     /**
@@ -24,10 +26,8 @@ class PageController extends BaseAction
      */
     public function init(): void
     {
-        $this->cors();
-        $this->method = $_SERVER['REQUEST_METHOD'];
         if ($this->model === '') {
-            echo $this->role;
+            echo json_encode($this->arrayAuth);
         } else {
             switch ($this->method) {
                 case 'GET':
@@ -60,11 +60,5 @@ class PageController extends BaseAction
         } else {
             Services::undefinedController();
         }
-    }
-    private function cors():void {
-        header('Access-Control-Allow-Origin: *');
-        header("Access-Control-Allow-Headers: X-API-KEY, Origin, X-Requested-With, Content-Type, Accept, Access-Control-Request-Method");
-        header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE");
-        header("Allow: GET, POST, PUT, DELETE");
     }
 }
